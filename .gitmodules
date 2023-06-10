@@ -3,7 +3,8 @@
 	url = https://github.com/ZigEmbeddedGroup/microzig.git
 [submodule "deps/microchip-atmega"]
 	path = deps/microchip-atmega
-	url = https://github.com/ZigEmbeddedGroup/microchip-atmega.git
+	url = https://github.com/Tiedye/microchip-atmega.git
+	branch = patch-1
 [submodule "deps/serial"]
 	path = deps/serial
 	url = https://github.com/ZigEmbeddedGroup/serial.git

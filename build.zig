@@ -34,9 +34,14 @@ pub fn build(b: *std.Build) void {
             .path = "src/embedded.zig",
         },
         .backing = .{
-            .board = atmega.boards.arduino_nano,
+            .board = atmega.boards.arduino_uno,
         },
         .optimize = .ReleaseSmall,
     });
     embedded_exe.installArtifact(b);
+
+    const serial = b.createModule(.{
+        .source_file = .{ .path = "deps/serial/src/serial.zig" },
+    });
+    exe.addModule("serial", serial);
 }

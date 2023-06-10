@@ -1,78 +1,62 @@
 const std = @import("std");
+const zserial = @import("serial");
 
-const Command = union(enum) {
-    tare: .{},
-    calibrate: struct { amount: f32 },
-    start: .{},
-    stop: .{},
-    read: .{},
-    fetch: .{},
-
-    fn encode(self: Command, buffer: []u8) void {
-        switch (self) {
-            .tare => buffer[0] = 0x01,
-            .calibrate => |calibrate_cmd| {
-                buffer[0] = 0x02;
-                std.mem.copy(buffer[1..], std.mem.asBytes(&calibrate_cmd.amount));
-            },
-            .start => buffer[0] = 0x03,
-            .stop => buffer[0] = 0x04,
-            .read => buffer[0] = 0x05,
-            .fetch => buffer[0] = 0x06,
-        }
-    }
-};
-
-fn configurePort(handle: std.os.fd_t) !void {
-    var settings = try std.os.tcgetattr(handle);
-    const os = std.os.linux;
-    const CBAUD = 0o000000010017;
-    settings.iflag = 0;
-    settings.oflag = 0;
-    settings.cflag = os.CREAD;
-    settings.lflag = 0;
-    settings.ispeed = 0;
-    settings.ospeed = 0;
-
-    settings.cflag |= os.CLOCAL;
-    settings.cflag |= os.CS8;
-
-    const baudmask = os.B115200;
-    settings.cflag &= ~@as(os.tcflag_t, CBAUD);
-    settings.cflag |= baudmask;
-    settings.ispeed = baudmask;
-    settings.ospeed = baudmask;
-
-    try std.os.tcsetattr(handle, .NOW, settings);
-}
+const Command = @import("command.zig").Command;
 
 pub fn main() !void {
-    const port = try std.fs.openFileAbsolute("/dev/ttyACM0", .{ .mode = .read_write });
-    defer port.close();
+    const serial = try std.fs.openFileAbsolute(
+        "/dev/ttyACM0",
+        .{ .mode = .read_write },
+    );
+    defer serial.close();
 
-    try configurePort(port.handle);
+    try zserial.configureSerialPort(serial, .{
+        .baud_rate = 9600,
+        .word_size = 8,
+        .parity = .none,
+        .stop_bits = .one,
+        .handshake = .none,
+    });
 
-    var buffer: [1024]u8 = undefined;
+    // while (true) {
+    //     var v: u16 = 0;
+    //     const n = try serial.readAll(std.mem.asBytes(&v));
+    //     try zserial.flushSerialPort(serial, true, false);
+    //     if (n == 0) {
+    //         break;
+    //     }
+    //     std.debug.print("{x} {any}\n", .{ v, std.mem.asBytes(&v).* });
+    // }
 
+    var v: u16 = 0;
     while (true) {
-        const n = try port.read(buffer[0..]);
+        // std.time.sleep(1_000_000_000);
+        std.debug.print("try write\n", .{});
+        try serial.writeAll(std.mem.asBytes(&v));
+        // try zserial.flushSerialPort(serial, true, true);
+        // const bytes = std.mem.toBytes(v)[0..];
+        // const bytes = &[_]u8{ 0x00, 0x00 };
+        // std.debug.print("try write {}\n", .{bytes.len});
+        // try serial.writeAll(bytes);
+        // try serial.writeAll(bytes[0..1]);
+        // try serial.writeAll(bytes[1..2]);
+        // try serial.writeAll(std.mem.asBytes(&v));
+        // try zserial.flushSerialPort(serial, true, true);
+        std.debug.print("try read\n", .{});
+        const n = try serial.readAll(std.mem.asBytes(&v));
         if (n == 0) {
             break;
         }
-        _ = try std.io.getStdOut().write(buffer[0..n]);
+        std.debug.print("{}\n", .{v});
     }
 
-    // // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
-    // std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
+    // var buffer: [1024]u8 = undefined;
 
-    // // stdout is for the actual output of your application, for example if you
-    // // are implementing gzip, then only the compressed bytes should be sent to
-    // // stdout, not any debugging messages.
-    // const stdout_file = std.io.getStdOut().writer();
-    // var bw = std.io.bufferedWriter(stdout_file);
-    // const stdout = bw.writer();
-
-    // try stdout.print("Run `zig build test` to run the tests.\n", .{});
-
-    // try bw.flush(); // don't forget to flush!
+    // while (true) {
+    //     const n = try port.read(buffer[0..]);
+    //     if (n == 0) {
+    //         break;
+    //     }
+    //     _ = try std.io.getStdOut().write(buffer[0..n]);
+    // }
 }
