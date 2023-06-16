@@ -15,19 +15,14 @@ pub fn main() !void {
     });
     gpio.setOutput(led);
     gpio.write(led, .low);
-    // var v: u16 = 0;
-    while (true) {
-        // busyloop(100_000);
-        gpio.toggle(led);
-        const v = read(u16, serial);
-        busyloop(1_000_000);
-        // gpio.toggle(led);
-        write(v + 1, serial);
+    handshake(serial);
+    gpio.write(led, .high);
+}
 
-        // gpio.toggle(led);
-        // v += 1;
-        // write(v, serial);
-        // write("hello world\n", serial);
+fn handshake(serial: Port) void {
+    while (!serial.canRead()) {
+        write(@as(u8, 1), serial);
+        delayMicroseconds(100_000);
     }
 }
 
@@ -55,9 +50,13 @@ fn read_buf(buffer: *[]u8, serial: Port) void {
     }
 }
 
-fn busyloop(comptime cycles: comptime_int) void {
-    var remaining_cycles: u24 = cycles;
+fn delayMicroseconds(comptime microseconds: comptime_int) void {
+    var remaining_cycles: u32 = microseconds;
     while (remaining_cycles > 0) : (remaining_cycles -= 1) {
-        asm volatile ("");
+        asm volatile (
+            \\nop
+            \\nop
+            \\nop
+        );
     }
 }

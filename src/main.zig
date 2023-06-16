@@ -2,6 +2,22 @@ const std = @import("std");
 const zserial = @import("serial");
 
 const Command = @import("command.zig").Command;
+const assert = std.debug.assert;
+
+fn setAbortSignalHandler(comptime handler: *const fn () void) !void {
+    const internal_handler = struct {
+        fn internal_handler(sig: c_int) callconv(.C) void {
+            assert(sig == std.os.SIG.INT);
+            handler();
+        }
+    }.internal_handler;
+    const act = std.os.Sigaction{
+        .handler = .{ .handler = internal_handler },
+        .mask = std.os.empty_sigset,
+        .flags = 0,
+    };
+    try std.os.sigaction(std.os.SIG.INT, &act, null);
+}
 
 pub fn main() !void {
     const serial = try std.fs.openFileAbsolute(
@@ -9,6 +25,7 @@ pub fn main() !void {
         .{ .mode = .read_write },
     );
     defer serial.close();
+    defer std.debug.print("exiting\n", .{});
 
     try zserial.configureSerialPort(serial, .{
         .baud_rate = 9600,
@@ -18,45 +35,24 @@ pub fn main() !void {
         .handshake = .none,
     });
 
-    // while (true) {
-    //     var v: u16 = 0;
-    //     const n = try serial.readAll(std.mem.asBytes(&v));
-    //     try zserial.flushSerialPort(serial, true, false);
-    //     if (n == 0) {
-    //         break;
-    //     }
-    //     std.debug.print("{x} {any}\n", .{ v, std.mem.asBytes(&v).* });
-    // }
+    try zserial.flushSerialPort(serial, true, true);
 
-    var v: u16 = 0;
+    try handshake(serial);
+
     while (true) {
-        // std.time.sleep(1_000_000_000);
-        std.debug.print("try write\n", .{});
-        try serial.writeAll(std.mem.asBytes(&v));
-        // try zserial.flushSerialPort(serial, true, true);
-        // const bytes = std.mem.toBytes(v)[0..];
-        // const bytes = &[_]u8{ 0x00, 0x00 };
-        // std.debug.print("try write {}\n", .{bytes.len});
-        // try serial.writeAll(bytes);
-        // try serial.writeAll(bytes[0..1]);
-        // try serial.writeAll(bytes[1..2]);
-        // try serial.writeAll(std.mem.asBytes(&v));
-        // try zserial.flushSerialPort(serial, true, true);
-        std.debug.print("try read\n", .{});
-        const n = try serial.readAll(std.mem.asBytes(&v));
-        if (n == 0) {
+        const time = std.time.microTimestamp();
+        std.debug.print("waiting for response\n", .{});
+        _ = try serial.reader().readByte();
+        std.debug.print("took {} microseconds\n", .{std.time.microTimestamp() - time});
+    }
+}
+
+fn handshake(serial: std.fs.File) !void {
+    while (true) {
+        const byte = try serial.reader().readByte();
+        if (byte == 1) {
             break;
         }
-        std.debug.print("{}\n", .{v});
     }
-
-    // var buffer: [1024]u8 = undefined;
-
-    // while (true) {
-    //     const n = try port.read(buffer[0..]);
-    //     if (n == 0) {
-    //         break;
-    //     }
-    //     _ = try std.io.getStdOut().write(buffer[0..n]);
-    // }
+    try serial.writer().writeByte(1);
 }

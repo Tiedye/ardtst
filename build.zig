@@ -36,7 +36,7 @@ pub fn build(b: *std.Build) void {
         .backing = .{
             .board = atmega.boards.arduino_uno,
         },
-        .optimize = .ReleaseSmall,
+        .optimize = .ReleaseFast,
     });
     embedded_exe.installArtifact(b);
 
