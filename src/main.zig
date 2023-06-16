@@ -4,21 +4,6 @@ const zserial = @import("serial");
 const Command = @import("command.zig").Command;
 const assert = std.debug.assert;
 
-fn setAbortSignalHandler(comptime handler: *const fn () void) !void {
-    const internal_handler = struct {
-        fn internal_handler(sig: c_int) callconv(.C) void {
-            assert(sig == std.os.SIG.INT);
-            handler();
-        }
-    }.internal_handler;
-    const act = std.os.Sigaction{
-        .handler = .{ .handler = internal_handler },
-        .mask = std.os.empty_sigset,
-        .flags = 0,
-    };
-    try std.os.sigaction(std.os.SIG.INT, &act, null);
-}
-
 pub fn main() !void {
     const serial = try std.fs.openFileAbsolute(
         "/dev/ttyACM0",
