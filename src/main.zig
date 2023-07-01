@@ -23,19 +23,18 @@ pub fn main() !void {
     try zserial.flushSerialPort(serial, true, true);
 
     try handshake(serial);
+    std.debug.print("handshake completed\n", .{});
 
     while (true) {
-        const time = std.time.microTimestamp();
-        std.debug.print("waiting for response\n", .{});
-        _ = try serial.reader().readByte();
-        std.debug.print("took {} microseconds\n", .{std.time.microTimestamp() - time});
+        const value = try serial.reader().readIntLittle(i24);
+        std.debug.print("value: {any}\n", .{value});
     }
 }
 
 fn handshake(serial: std.fs.File) !void {
     while (true) {
         const byte = try serial.reader().readByte();
-        if (byte == 1) {
+        if (byte == 'A') {
             break;
         }
     }
