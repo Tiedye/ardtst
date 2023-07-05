@@ -2,9 +2,6 @@ const gpio = @import("microzig").hal.gpio;
 
 pub fn HX711(comptime pd_sck: type, comptime dout: type) type {
     return struct {
-        pd_sck: pd_sck,
-        dout: dout,
-
         pub fn init() void {
             gpio.setOutput(pd_sck);
             gpio.setInput(dout);

@@ -14,9 +14,13 @@ pub const Serial = struct {
         return Self{ .port = port };
     }
 
-    pub fn read(self: Serial, buffer: []u8) usize {
-        for (buffer) |*byte| {
-            byte.* = self.port.rx();
+    pub fn read(self: Serial, buffer: []u8) !usize {
+        for (buffer, 0..) |*byte, count| {
+            if (self.port.canRead()) {
+                byte.* = self.port.rx();
+            } else {
+                return count;
+            }
         }
         return buffer.len;
     }
@@ -28,8 +32,12 @@ pub const Serial = struct {
     }
 
     pub fn write(self: Serial, buffer: []const u8) !usize {
-        for (buffer) |byte| {
-            self.port.tx(byte);
+        for (buffer, 0..) |byte, count| {
+            if (self.port.canWrite()) {
+                self.port.tx(byte);
+            } else {
+                return count;
+            }
         }
         return buffer.len;
     }

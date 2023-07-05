@@ -14,10 +14,6 @@ pub fn main() !void {
 
     try zserial.configureSerialPort(serial, .{
         .baud_rate = 9600,
-        .word_size = 8,
-        .parity = .none,
-        .stop_bits = .one,
-        .handshake = .none,
     });
 
     try zserial.flushSerialPort(serial, true, true);

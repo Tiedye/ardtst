@@ -8,12 +8,18 @@ pub fn build(b: *std.Build) void {
 
     const optimize = b.standardOptimizeOption(.{});
 
+    const serialMod = b.createModule(.{
+        .source_file = .{ .path = "deps/serial/src/serial.zig" },
+    });
+
     const exe = b.addExecutable(.{
-        .name = "ardtst",
+        .name = "readhx711",
         .root_source_file = .{ .path = "src/main.zig" },
         .target = target,
         .optimize = optimize,
     });
+
+    exe.addModule("serial", serialMod);
 
     b.installArtifact(exe);
 
@@ -29,9 +35,9 @@ pub fn build(b: *std.Build) void {
     run_step.dependOn(&run_cmd.step);
 
     var embedded_exe = microzig.addEmbeddedExecutable(b, .{
-        .name = "embedded",
+        .name = "driver",
         .source_file = .{
-            .path = "src/embedded.zig",
+            .path = "src/driver/main.zig",
         },
         .backing = .{
             .board = atmega.boards.arduino_uno,
@@ -39,9 +45,4 @@ pub fn build(b: *std.Build) void {
         .optimize = .ReleaseFast,
     });
     embedded_exe.installArtifact(b);
-
-    const serial = b.createModule(.{
-        .source_file = .{ .path = "deps/serial/src/serial.zig" },
-    });
-    exe.addModule("serial", serial);
 }

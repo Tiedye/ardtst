@@ -2,5 +2,9 @@
     "files.exclude": {
         "**/zig-cache": true
     },
-    "git.detectSubmodules": false
+    "git.detectSubmodules": false,
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.python"
+    },
+    "python.formatting.provider": "none"
 }
